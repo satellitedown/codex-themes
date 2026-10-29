@@ -7,7 +7,8 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "watch": "node scripts/build.mjs --watch",
-    "inject": "node scripts/inject.mjs"
+    "inject": "node scripts/inject.mjs",
+    "preview": "node scripts/preview.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.2"

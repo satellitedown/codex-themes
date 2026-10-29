@@ -1,5 +1,7 @@
 import { THEME_BY_ID } from '../themes/index.js';
+import { canSetAppearance, setAppearance } from './appearance.js';
 import { activeComposer, clearComposer, composerOf, composerRect, slashQuery } from './composer.js';
+import { ChatGlass } from './glass.js';
 import { OFF, Picker } from './picker.js';
 import { SidebarSwitcher } from './sidebar.js';
 import { Store } from './store.js';
@@ -37,7 +39,15 @@ export class CodexThemes {
       onApply: (id) => this.select(id),
       onClose: (reason) => this.pickerClosed(reason),
     });
-    this.sidebar = new SidebarSwitcher({ signal, onSelect: (id) => this.select(id) });
+    this.sidebar = new SidebarSwitcher({
+      signal,
+      onSelect: (id) => this.select(id),
+      onScheme: (scheme) => setAppearance(scheme).catch((error) => console.warn(error)),
+    });
+    canSetAppearance().then((available) => {
+      if (available && !signal.aborted) this.sidebar.enableSchemeSwitch();
+    });
+    this.glass = new ChatGlass({ signal, after: this.wallpaper.canvas });
 
     this.scheme = currentScheme();
     this.wallpaper.setReducedMotion(prefersReducedMotion());
@@ -68,15 +78,15 @@ export class CodexThemes {
     }, { capture: true, signal });
 
     const poll = setInterval(() => {
-      this.trackLanes();
+      this.trackLayout();
       this.sidebar.mount();
       if (this.picker.isOpen && this.pickerMode === 'slash' && slashQuery(this.pickerEditor) === null) this.picker.close('typing');
     }, POLL_MS);
     signal.addEventListener('abort', () => clearInterval(poll), { once: true });
-    window.addEventListener('resize', () => this.trackLanes(), { signal });
+    window.addEventListener('resize', () => this.trackLayout(), { signal });
 
     this.show(this.store.get());
-    this.trackLanes();
+    this.trackLayout();
   }
 
   /** Displays a theme without persisting it (previews, other windows' changes). */
@@ -123,8 +133,12 @@ export class CodexThemes {
     this.pickerEditor = null;
   }
 
-  /** Keeps wallpaper tiles faint where people read: the conversation column and the sidebar. */
-  trackLanes() {
+  /**
+   * Follows where people read: wallpaper tiles stay faint behind the
+   * conversation column and the sidebar, and the column gets frosted glass.
+   */
+  trackLayout() {
+    this.glass.track();
     const lanes = [];
     const editor = activeComposer();
     const rect = editor ? (editor.closest('[class*="_ComposerLayoutRoot_"]') ?? editor).getBoundingClientRect() : null;

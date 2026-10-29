@@ -1,5 +1,7 @@
-/** Parses #rgb, #rrggbb, #rrggbbaa → { r, g, b, a } with channels 0-255 and a 0-1. */
+/** Parses #rgb, #rrggbb, #rrggbbaa, rgb() and rgba() → { r, g, b, a } with channels 0-255 and a 0-1. */
 export function parseColor(input) {
+  const fn = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/i.exec(input.trim());
+  if (fn) return { r: +fn[1], g: +fn[2], b: +fn[3], a: fn[4] === undefined ? 1 : +fn[4] };
   let hex = input.trim().replace(/^#/, '');
   if (hex.length === 3 || hex.length === 4) hex = [...hex].map((ch) => ch + ch).join('');
   if (!/^[0-9a-f]{6}([0-9a-f]{2})?$/i.test(hex)) throw new Error(`codex-themes: unsupported color ${input}`);

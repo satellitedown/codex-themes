@@ -1,5 +1,27 @@
 import { GLYPH } from '../engine/field.js';
-import { hash1, wrap } from '../engine/math.js';
+import { bayer, clamp, hash1, smoothstep, wrap } from '../engine/math.js';
+
+/**
+ * Picks an ink from `ramp` (dark → light ink indices) for a light level
+ * `value` in [0, 1], dithering between neighbouring tones with an ordered
+ * pattern at cell (c, r): smooth form shading that still reads as pixel art.
+ */
+export function shade(ramp, value, c, r) {
+  const x = clamp(value, 0, 1) * (ramp.length - 1);
+  const k = Math.floor(x);
+  return ramp[k + 1 < ramp.length && x - k > bayer(c, r) ? k + 1 : k];
+}
+
+/**
+ * Like shade(), but dithers only in a seam around each step between tones
+ * (`seam` = fraction of a step), so big faces read as flat planes with clean
+ * edges instead of a speckled gradient.
+ */
+export function crisp(ramp, value, c, r, seam = 0.4) {
+  const x = clamp(value, 0, 1) * (ramp.length - 1);
+  const k = Math.floor(x);
+  return ramp[k + 1 < ramp.length && smoothstep(0.5 - seam / 2, 0.5 + seam / 2, x - k) > bayer(c, r) ? k + 1 : k];
+}
 
 /** Expanding rings of bare glyphs (pond/boat ripples). */
 export function ripples(view) {

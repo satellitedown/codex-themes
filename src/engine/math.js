@@ -27,6 +27,13 @@ export function hash2(x, y) {
   return hash1(Math.imul(x | 0, 73856093) ^ Math.imul(y | 0, 19349663));
 }
 
+const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+/** Ordered-dither threshold in (0, 1) for a cell: shades with a regular pixel pattern instead of noise. */
+export function bayer(c, r) {
+  return (BAYER4[(r & 3) * 4 + (c & 3)] + 0.5) / 16;
+}
+
 /** Seeded PRNG (mulberry32) so every scene lays out the same way each launch. */
 export function rng(seed) {
   let a = seed >>> 0;

@@ -35,7 +35,9 @@ without themes), and it quits when Codex quits.
 ## Use
 
 - Pick a wallpaper from the **Wallpaper** previews at the bottom of the sidebar
-  (hover to play one); **Off** turns it off.
+  (hover to play one); **Off** turns it off. **Day / Night** below the previews
+  switches Codex between its light and dark appearance (the same setting as
+  Settings → Appearance), and each wallpaper follows with its day or night scene.
 - Type `/theme` in any composer, or press **⌘⌥T**.
 - **← →** preview a theme in the real wallpaper, **↵** applies it and **esc** reverts.
 - Clicking a card applies it right away.
@@ -55,8 +57,9 @@ checked, so nothing inside `ChatGPT.app` is modified. Instead:
    windows (quick ask, pet overlay) are skipped.
 3. The engine (`src/`) draws the scene on a canvas behind Codex's UI. Its CSS
    makes the window shell transparent, turns the sidebar, composer and settings
-   panels into tinted glass, retints menus and popovers to the theme, and adds
-   the picker and the sidebar switcher.
+   panels into tinted glass, puts a frosted strip behind the conversation,
+   retints menus and popovers to the theme, and adds the picker and the sidebar
+   switcher.
 
 Per frame, a scene writes cells into a `Field` (tile, bare glyph or solid
 block, with ink and opacity). The renderer blits them from a pre-rendered glyph
@@ -77,6 +80,18 @@ node scripts/inject.mjs --watch             # on the Mac: re-inject into the run
 `--port N`. A re-injected build replaces the running one in place. Themes live
 in `src/themes/`; the contract is documented in `src/themes/index.js`.
 
+To work on scenes without Codex, render them with headless Chromium (or Chrome;
+set `CHROME` to pick a binary):
+
+```sh
+npm run preview -- waterfall --out /tmp/preview   # day + night, framed like the app
+npm run preview -- --raw --size 1920x1080         # every theme, scene only
+```
+
+The default frame mimics the app: reading areas dimmed, glass sidebar, chat
+column and composer, sample text. Options: `--scheme light|dark|both`,
+`--time <seconds>`, `--size WxH`, `--dpr N`, `--raw`, `--out <dir>`.
+
 ## Caveats
 
 - Themes appear only when Codex was opened through Codex Themes. If Codex
@@ -86,6 +101,9 @@ in `src/themes/`; the contract is documented in `src/themes/index.js`.
 - Styling hooks rely on Codex's current markup (composer and surface CSS
   variables, sidebar and layout class names). A Codex update can break the
   glass styling until it is adjusted here.
+- Day / Night writes Codex's appearance setting through Codex's internal
+  settings service. If an update moves that service, the switch hides itself;
+  Settings → Appearance keeps working.
 - Log: `~/Library/Logs/CodexThemes.log`. Uninstall: delete `Codex Themes.app`.
 
 ## Credits

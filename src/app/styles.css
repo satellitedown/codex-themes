@@ -14,6 +14,28 @@
   display: block;
 }
 
+/* Frosted strip behind the conversation column (positioned by glass.js).
+   Soft side edges and a short fade under the title bar. */
+#cx-glass {
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+  display: none;
+  background-color: color-mix(in srgb, var(--cx-base) 24%, transparent);
+  -webkit-backdrop-filter: blur(7px) saturate(1.15);
+  backdrop-filter: blur(7px) saturate(1.15);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent),
+    linear-gradient(to bottom, transparent, #000 32px);
+  mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent),
+    linear-gradient(to bottom, transparent, #000 32px);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+:root[data-cx-wallpaper] #cx-glass.cx-on {
+  display: block;
+}
+
 :root[data-cx-wallpaper] {
   background-color: var(--cx-base) !important;
   --color-background-user-message: var(--cx-bubble);
@@ -353,4 +375,51 @@
 
 .cx-side-thumb[aria-pressed='true'] {
   box-shadow: 0 0 0 2px var(--cx-accent, var(--color-background-accent-action, #3a83f7));
+}
+
+.cx-side-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--color-background-secondary-soft-alpha, rgba(127, 127, 127, 0.12));
+}
+
+.cx-side-mode[hidden] {
+  display: none;
+}
+
+.cx-side-mode button {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cx-side-mode svg {
+  width: 13px;
+  height: 13px;
+}
+
+.cx-side-mode button:hover {
+  color: var(--color-text);
+}
+
+.cx-side-mode button[aria-pressed='true'] {
+  background: var(--color-surface-elevated-secondary, rgba(127, 127, 127, 0.2));
+  color: var(--color-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }

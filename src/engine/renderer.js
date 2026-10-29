@@ -170,8 +170,10 @@ export class Renderer {
     for (const spot of bg.spots ?? []) {
       const r = spot.r * Math.max(w, h);
       const rg = ctx.createRadialGradient(spot.x * w, spot.y * h, 0, spot.x * w, spot.y * h, r);
+      // Fade to the same colour: canvas interpolates unpremultiplied, so a
+      // transparent-black end stop would drag the halo through grey.
       rg.addColorStop(0, spot.color);
-      rg.addColorStop(1, 'rgba(0,0,0,0)');
+      rg.addColorStop(1, css({ ...parseColor(spot.color), a: 0 }));
       ctx.fillStyle = rg;
       ctx.fillRect(0, 0, w, h);
     }

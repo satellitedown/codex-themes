@@ -23,18 +23,38 @@
   background: transparent !important;
 }
 
-/* Window shell (title bar, navigation rail): let the wallpaper through. */
-:root[data-cx-wallpaper] #root > [class*='_PageSurfaceLayout_'],
-:root[data-cx-wallpaper] #root > [class*='_FullHeightPageSurfaceLayout_'] {
+/* Window shell (title bar, navigation rail): let the wallpaper through.
+   The layout root is not always a direct child of #root (e.g. Settings). */
+:root[data-cx-wallpaper] [class*='_PageSurfaceLayout_'],
+:root[data-cx-wallpaper] [class*='_FullHeightPageSurfaceLayout_'] {
   background-color: transparent !important;
 }
 
-/* Conversation sidebar: tinted frosted glass. */
-:root[data-cx-wallpaper] .sidebar-navigation {
-  background-color: var(--cx-sidebar) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(1.35);
-  backdrop-filter: blur(18px) saturate(1.35);
+/* Sidebar: a light tint of frosted glass so the scene shows through; tiles
+   behind it are dimmed by the renderer for legibility. Only the outermost
+   panel is tinted (the sidebar nests .sidebar-navigation elements). */
+:root[data-cx-wallpaper] .sidebar-navigation:not(.sidebar-navigation *) {
+  background-color: color-mix(in srgb, var(--cx-sidebar) 42%, transparent) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.5);
+  backdrop-filter: blur(14px) saturate(1.5);
   transition: background-color 0.5s ease;
+}
+
+/* A collapsed sidebar peeking over the page needs a solid backing to read. */
+:root[data-cx-wallpaper] [data-slate-sidebar-peeking='true'] .sidebar-navigation:not(.sidebar-navigation *) {
+  background-color: var(--cx-panel) !important;
+}
+
+/* Settings cards and other panels paint with --color-background-panel
+   (inline style); give them the same frosted treatment as the composer. */
+:root[data-cx-wallpaper] [style*='--color-background-panel'] {
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(18px) saturate(1.4);
+}
+
+:root[data-cx-wallpaper] [role='menu'] {
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
 }
 
 /* Main page card: clear, so the wallpaper is the page. Fades/strips keyed
@@ -244,4 +264,93 @@
 /* Codex's own slash menu ("No commands") would sit under the panel. */
 :root.cx-picker-open [data-composer-overlay-floating-ui] {
   visibility: hidden !important;
+}
+
+/* ── Sidebar wallpaper switcher ──────────────────────────────────── */
+
+.cx-side {
+  flex: none;
+  margin: 6px 8px 10px;
+  padding: 8px 8px 9px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cx-sidebar, var(--color-surface-secondary)) 45%, transparent);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.cx-side-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 2px 7px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.cx-side-title {
+  color: var(--color-text-secondary);
+}
+
+.cx-side-current {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-tertiary);
+}
+
+.cx-side-off {
+  appearance: none;
+  margin-left: auto;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.cx-side-off:hover {
+  background: var(--color-background-primary-ghost-hover);
+  color: var(--color-text);
+}
+
+.cx-side-off[aria-pressed='true'] {
+  background: var(--color-background-secondary-soft-alpha);
+  color: var(--color-text);
+}
+
+.cx-side-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.cx-side-thumb {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  background: var(--color-surface-secondary, #141414);
+  box-shadow: 0 0 0 1px var(--color-border);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cx-side-thumb canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cx-side-thumb:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px var(--color-border-strong, rgba(255, 255, 255, 0.2));
+}
+
+.cx-side-thumb[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--cx-accent, var(--color-background-accent-action, #3a83f7));
 }

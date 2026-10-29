@@ -34,6 +34,8 @@ without themes), and it quits when Codex quits.
 
 ## Use
 
+- Pick a wallpaper from the **Wallpaper** previews at the bottom of the sidebar
+  (hover to play one); **Off** turns it off.
 - Type `/theme` in any composer, or press **⌘⌥T**.
 - **← →** preview a theme in the real wallpaper, **↵** applies it and **esc** reverts.
 - Clicking a card applies it right away.
@@ -52,15 +54,16 @@ checked, so nothing inside `ChatGPT.app` is modified. Instead:
    and registers `dist/codex-themes.js` to run on every page load. Utility
    windows (quick ask, pet overlay) are skipped.
 3. The engine (`src/`) draws the scene on a canvas behind Codex's UI. Its CSS
-   makes the window shell transparent, turns the sidebar and composer into
-   tinted glass, and adds the picker.
+   makes the window shell transparent, turns the sidebar, composer and settings
+   panels into tinted glass, retints menus and popovers to the theme, and adds
+   the picker and the sidebar switcher.
 
 Per frame, a scene writes cells into a `Field` (tile, bare glyph or solid
 block, with ink and opacity). The renderer blits them from a pre-rendered glyph
 atlas, and static scenery is pre-rendered once per resize. It runs at 30 fps
 when focused and 12 fps in the background, stops when the window is hidden,
 and draws a still frame when reduced motion is on. Tiles behind the
-conversation column are drawn faint so text stays readable.
+conversation column and the sidebar are drawn faint so text stays readable.
 
 ## Develop
 

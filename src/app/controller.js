@@ -1,6 +1,7 @@
 import { THEME_BY_ID } from '../themes/index.js';
 import { activeComposer, clearComposer, composerOf, composerRect, slashQuery } from './composer.js';
 import { OFF, Picker } from './picker.js';
+import { SidebarSwitcher } from './sidebar.js';
 import { Store } from './store.js';
 import { Surfaces } from './surfaces.js';
 import { Wallpaper } from './wallpaper.js';
@@ -36,6 +37,7 @@ export class CodexThemes {
       onApply: (id) => this.select(id),
       onClose: (reason) => this.pickerClosed(reason),
     });
+    this.sidebar = new SidebarSwitcher({ signal, onSelect: (id) => this.select(id) });
 
     this.scheme = currentScheme();
     this.wallpaper.setReducedMotion(prefersReducedMotion());
@@ -66,27 +68,29 @@ export class CodexThemes {
     }, { capture: true, signal });
 
     const poll = setInterval(() => {
-      this.trackLane();
+      this.trackLanes();
+      this.sidebar.mount();
       if (this.picker.isOpen && this.pickerMode === 'slash' && slashQuery(this.pickerEditor) === null) this.picker.close('typing');
     }, POLL_MS);
     signal.addEventListener('abort', () => clearInterval(poll), { once: true });
-    window.addEventListener('resize', () => this.trackLane(), { signal });
+    window.addEventListener('resize', () => this.trackLanes(), { signal });
 
     this.show(this.store.get());
-    this.trackLane();
+    this.trackLanes();
   }
 
   /** Displays a theme without persisting it (previews, other windows' changes). */
   show(id) {
     const theme = THEME_BY_ID.get(id);
     this.current = theme ? id : OFF;
+    this.sidebar.update({ current: this.current, scheme: this.scheme });
     if (!theme) {
       this.wallpaper.hide();
       this.surfaces.clear();
       return;
     }
     this.wallpaper.show(theme, this.scheme);
-    this.surfaces.apply(theme, this.wallpaper.renderer.palette);
+    this.surfaces.apply(theme, this.wallpaper.renderer.palette, this.scheme);
   }
 
   /** Displays and persists a theme; other windows follow via storage events. */
@@ -119,18 +123,17 @@ export class CodexThemes {
     this.pickerEditor = null;
   }
 
-  /** Keeps wallpaper tiles faint behind the conversation column. */
-  trackLane() {
+  /** Keeps wallpaper tiles faint where people read: the conversation column and the sidebar. */
+  trackLanes() {
+    const lanes = [];
     const editor = activeComposer();
     const rect = editor ? (editor.closest('[class*="_ComposerLayoutRoot_"]') ?? editor).getBoundingClientRect() : null;
     const main = document.querySelector('main[class*="_MainContentSurface_"]')?.getBoundingClientRect();
-    if (rect) {
-      this.wallpaper.setLane({ x0: rect.left - 12, x1: rect.right + 12, y0: main ? main.top : 0, y1: rect.bottom + 8 });
-    } else if (main && main.width > 0) {
-      this.wallpaper.setLane({ x0: main.left + 16, x1: main.right - 16, y0: main.top, y1: main.bottom });
-    } else {
-      this.wallpaper.setLane(null);
-    }
+    if (rect) lanes.push({ x0: rect.left - 12, x1: rect.right + 12, y0: main ? main.top : 0, y1: rect.bottom + 8 });
+    else if (main && main.width > 0) lanes.push({ x0: main.left + 16, x1: main.right - 16, y0: main.top, y1: main.bottom });
+    const side = document.querySelector('.sidebar-navigation:not(.sidebar-navigation *)')?.getBoundingClientRect();
+    if (side && side.width > 40) lanes.push({ x0: side.left, x1: side.right, y0: side.top, y1: side.bottom });
+    this.wallpaper.setLanes(lanes.map((l) => ({ x0: Math.round(l.x0), x1: Math.round(l.x1), y0: Math.round(l.y0), y1: Math.round(l.y1) })));
   }
 
   destroy() {

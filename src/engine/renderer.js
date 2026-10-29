@@ -34,9 +34,9 @@ export class Renderer {
     this.bgCanvas = document.createElement('canvas');
     this.frontCanvas = null;
     this.glowCache = new Map();
-    this.lane = null;
-    this.laneCols = new Float32Array(0);
-    this.laneRows = new Float32Array(0);
+    this.laneRects = [];
+    this.laneKey = '';
+    this.lanes = [];
     this.fade = null;
     this.theme = null;
     this.scene = null;
@@ -69,7 +69,7 @@ export class Renderer {
       if (prevW && prevH) this.scene?.resize?.(this.w / prevW, this.h / prevH);
     }
     if (dprChanged && this.theme) this.buildAtlas();
-    this.updateLane();
+    this.updateLanes();
     this.scheduleBake(prevW === 0);
   }
 
@@ -109,7 +109,7 @@ export class Renderer {
     this.time = 0;
     this.glowCache.clear();
     this.buildAtlas();
-    this.updateLane();
+    this.updateLanes();
     this.bake();
   }
 
@@ -118,35 +118,30 @@ export class Renderer {
     this.atlas.build({ inks: this.inkList, chars: this.theme.chars, cw: this.cw, ch: this.ch, dpr: this.dpr });
   }
 
-  /** Region (CSS px) where reading happens; tiles there are drawn faint. */
-  setLane(rect) {
-    const lane = this.lane;
-    if (!rect && !lane) return;
-    if (rect && lane && rect.x0 === lane.x0 && rect.x1 === lane.x1 && rect.y0 === lane.y0 && rect.y1 === lane.y1) return;
-    this.lane = rect;
-    this.updateLane();
+  /** Regions (CSS px) where reading happens, e.g. the chat column and sidebar; tiles there are drawn faint. */
+  setLanes(rects) {
+    const key = rects.map((r) => `${r.x0},${r.x1},${r.y0},${r.y1}`).join('|');
+    if (key === this.laneKey) return;
+    this.laneKey = key;
+    this.laneRects = rects;
+    this.updateLanes();
     this.scheduleBake(false);
   }
 
-  updateLane() {
+  /** Per lane, separable column/row weights: 1 inside, feathered to 0 outside. */
+  updateLanes() {
     const { cols, rows, cw, ch } = this.field;
-    if (this.laneCols.length !== cols) this.laneCols = new Float32Array(cols);
-    if (this.laneRows.length !== rows) this.laneRows = new Float32Array(rows);
-    const lane = this.lane;
-    if (!lane || this.thumb) {
-      this.laneCols.fill(0);
-      this.laneRows.fill(0);
-      return;
-    }
     const f = LANE_FEATHER;
-    for (let c = 0; c < cols; c++) {
-      const x = (c + 0.5) * cw;
-      this.laneCols[c] = smoothstep(lane.x0 - f, lane.x0 + f * 0.25, x) * (1 - smoothstep(lane.x1 - f * 0.25, lane.x1 + f, x));
-    }
-    for (let r = 0; r < rows; r++) {
-      const y = (r + 0.5) * ch;
-      this.laneRows[r] = smoothstep(lane.y0 - f, lane.y0 + f * 0.25, y) * (1 - smoothstep(lane.y1 - f * 0.25, lane.y1 + f, y));
-    }
+    const ramp = (lo, hi, v) => smoothstep(lo - f, lo + f * 0.25, v) * (1 - smoothstep(hi - f * 0.25, hi + f, v));
+    this.lanes = this.thumb
+      ? []
+      : this.laneRects.map((lane) => {
+          const colWeights = new Float32Array(cols);
+          const rowWeights = new Float32Array(rows);
+          for (let c = 0; c < cols; c++) colWeights[c] = ramp(lane.x0, lane.x1, (c + 0.5) * cw);
+          for (let r = 0; r < rows; r++) rowWeights[r] = ramp(lane.y0, lane.y1, (r + 0.5) * ch);
+          return { cols: colWeights, rows: rowWeights };
+        });
   }
 
   scheduleBake(immediate) {
@@ -323,7 +318,7 @@ export class Renderer {
   drawField(ctx, field, t) {
     const { list, count, kind, ink, alpha, glyph, cols, cw, ch } = field;
     const laneAlpha = this.palette.lane ?? 0.6;
-    const { laneCols, laneRows } = this;
+    const { lanes } = this;
     if (this.thumb) {
       for (let k = 0; k < count; k++) {
         const i = list[k];
@@ -355,7 +350,12 @@ export class Renderer {
       const i = list[k];
       const c = i % cols;
       const r = (i - c) / cols;
-      const a = alpha[i] * (1 - (1 - laneAlpha) * laneCols[c] * laneRows[r]);
+      let lane = 0;
+      for (let k2 = 0; k2 < lanes.length; k2++) {
+        const weight = lanes[k2].cols[c] * lanes[k2].rows[r];
+        if (weight > lane) lane = weight;
+      }
+      const a = alpha[i] * (1 - (1 - laneAlpha) * lane);
       if (a < 0.03) continue;
       let g = glyph[i];
       if (g < 0) {

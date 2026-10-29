@@ -1,9 +1,8 @@
 import { subscribe } from '../engine/loop.js';
-import { Renderer } from '../engine/renderer.js';
 import { THEMES } from '../themes/index.js';
+import { thumbnail } from './thumbs.js';
 
 export const OFF = 'off';
-const THUMB_WORLD = { w: 1280, h: 800 };
 const THUMB_FPS = 10;
 const CHECK = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.5l2.2 2.2L9.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const OFF_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5.6 14.4l8.8-8.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
@@ -185,18 +184,7 @@ export class Picker {
 
   startThumbs() {
     this.stopThumbs();
-    const dpr = devicePixelRatio || 1;
-    this.thumbs = [];
-    for (const item of this.items) {
-      if (!item.theme) continue;
-      const { width, height } = item.canvas.getBoundingClientRect();
-      const renderer = new Renderer(item.canvas, { thumb: true, cellW: 24, cellH: 32, world: THUMB_WORLD });
-      renderer.resize(width, height, dpr);
-      renderer.setTheme(item.theme, this.scheme);
-      renderer.preroll(4);
-      renderer.frame(0);
-      this.thumbs.push(renderer);
-    }
+    this.thumbs = this.items.filter((item) => item.theme).map((item) => thumbnail(item.canvas, item.theme, this.scheme));
     this.unsubscribe = subscribe((dt) => {
       for (const r of this.thumbs) r.frame(dt);
     }, THUMB_FPS);

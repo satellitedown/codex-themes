@@ -60,8 +60,8 @@ export class Wallpaper {
     this.reducedMotion = on;
   }
 
-  setLane(rect) {
-    this.renderer.setLane(rect);
+  setLanes(rects) {
+    this.renderer.setLanes(rects);
   }
 
   destroy() {

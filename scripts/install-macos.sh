@@ -55,4 +55,4 @@ pkill -x CodexThemes 2>/dev/null || true
 rm -rf "$TARGET"
 ditto "$APP" "$TARGET"
 echo "✓ installed $TARGET ($VERSION)"
-echo "  Open it instead of Codex to launch Codex with themes. Type /theme in the composer or press ⌘⌥T."
+echo "  Open it instead of Codex to launch Codex with themes. Pick one at the bottom of the sidebar, type /theme, or press ⌘⌥T."

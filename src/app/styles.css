@@ -1,0 +1,247 @@
+/* ── Wallpaper layer ─────────────────────────────────────────────── */
+
+#cx-wallpaper {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+  display: none;
+}
+
+:root[data-cx-wallpaper] #cx-wallpaper {
+  display: block;
+}
+
+:root[data-cx-wallpaper] {
+  background-color: var(--cx-base) !important;
+  --color-background-user-message: var(--cx-bubble);
+}
+
+:root[data-cx-wallpaper] body {
+  background: transparent !important;
+}
+
+/* Window shell (title bar, navigation rail): let the wallpaper through. */
+:root[data-cx-wallpaper] #root > [class*='_PageSurfaceLayout_'],
+:root[data-cx-wallpaper] #root > [class*='_FullHeightPageSurfaceLayout_'] {
+  background-color: transparent !important;
+}
+
+/* Conversation sidebar: tinted frosted glass. */
+:root[data-cx-wallpaper] .sidebar-navigation {
+  background-color: var(--cx-sidebar) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  backdrop-filter: blur(18px) saturate(1.35);
+  transition: background-color 0.5s ease;
+}
+
+/* Main page card: clear, so the wallpaper is the page. Fades/strips keyed
+   off --color-surface inside it disappear with it. */
+:root[data-cx-wallpaper] main[class*='_MainContentSurface_'] {
+  background-color: transparent !important;
+  --color-surface: transparent;
+  --color-token-main-surface-primary: transparent;
+}
+
+/* Composer: Codex already routes its card through these variables (and
+   supports a backdrop filter), so the glass look needs no element hunting.
+   The project/host tray above it is painted with the action-bar token. */
+:root[data-cx-wallpaper] {
+  --composer-top-tray-background: var(--cx-composer);
+  --color-background-composer-action-bar: color-mix(in srgb, var(--cx-composer) 80%, transparent);
+}
+
+:root[data-cx-wallpaper] [data-composer-utility-rail] {
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  backdrop-filter: blur(22px) saturate(1.4);
+}
+
+:root[data-cx-wallpaper]
+  [class*='_ComposerLayoutRoot_']:not([data-composer-surface-variant='inline']):not([data-composer-surface-variant='document']) {
+  --composer-layout-surface-background: var(--cx-composer);
+  --composer-layout-surface-backdrop-filter: blur(22px) saturate(1.4);
+}
+
+/* ── /theme picker ───────────────────────────────────────────────── */
+
+.cx-picker {
+  position: fixed;
+  z-index: 2147483000;
+  box-sizing: border-box;
+  padding: 10px 12px 12px;
+  border-radius: var(--radius-2xl, 16px);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background: var(--color-surface-elevated-secondary, #2d2d2d);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32), 0 2px 8px rgba(0, 0, 0, 0.18);
+  color: var(--color-text, #fff);
+  font-size: 13px;
+  opacity: 0;
+  transform: translateY(6px) scale(0.99);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.cx-picker.cx-in {
+  opacity: 1;
+  transform: none;
+}
+
+.cx-picker[hidden] {
+  display: none;
+}
+
+.cx-picker-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  white-space: nowrap;
+}
+
+.cx-chip,
+.cx-hints kbd {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+.cx-chip {
+  font-size: 12px;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: var(--color-background-secondary-soft-alpha, rgba(255, 255, 255, 0.08));
+}
+
+.cx-title {
+  color: var(--color-text-secondary);
+}
+
+.cx-variant {
+  font-size: 11.5px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-tertiary);
+}
+
+.cx-hints {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--color-text-tertiary);
+}
+
+.cx-hints kbd {
+  font-size: 10.5px;
+  padding: 0 4px;
+  margin: 0 1px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.cx-cards {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr)) 44px;
+  gap: 8px;
+}
+
+.cx-card {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cx-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 10;
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--color-surface, #181818);
+  box-shadow: 0 0 0 1px var(--color-border);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.cx-thumb canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cx-card-off .cx-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+}
+
+.cx-card-off .cx-thumb svg {
+  width: 20px;
+  height: 20px;
+}
+
+.cx-card.cx-hover .cx-thumb {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px var(--color-border-strong, rgba(255, 255, 255, 0.2));
+}
+
+.cx-card.cx-selected .cx-thumb {
+  box-shadow: 0 0 0 2px var(--cx-accent, var(--color-background-accent-action, #3a83f7));
+}
+
+.cx-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 3px;
+  min-height: 2.5em;
+  font-size: 11.5px;
+  line-height: 1.25;
+  color: var(--color-text-secondary);
+}
+
+.cx-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cx-card.cx-selected .cx-label,
+.cx-card.cx-applied .cx-label {
+  color: var(--color-text);
+}
+
+.cx-check {
+  display: none;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-top: 1px;
+  color: var(--cx-accent, var(--color-text));
+}
+
+.cx-check svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+}
+
+.cx-card.cx-applied .cx-check {
+  display: block;
+}
+
+/* Codex's own slash menu ("No commands") would sit under the panel. */
+:root.cx-picker-open [data-composer-overlay-floating-ui] {
+  visibility: hidden !important;
+}

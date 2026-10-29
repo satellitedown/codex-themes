@@ -1,0 +1,18 @@
+{
+  "name": "codex-themes",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Animated ASCII wallpapers and a /theme picker for the Codex desktop app on macOS.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "inject": "node scripts/inject.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

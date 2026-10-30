@@ -218,10 +218,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func start() {
         guard let scriptURL = Bundle.main.url(forResource: "codex-themes", withExtension: "js"),
               let script = try? String(contentsOf: scriptURL, encoding: .utf8) else {
-            return fail("The theme bundle is missing from Codex Themes.app. Reinstall it with scripts/install-macos.sh.")
+            return fail("The theme bundle is missing from Codex Themes.app. Reinstall Codex Themes from github.com/satellitedown/codex-themes.")
         }
         guard let codexURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: codexBundleID) else {
-            return fail("Codex isn't installed (no app with bundle id \(codexBundleID)).")
+            return fail("Codex isn't installed. Get the ChatGPT desktop app, which includes Codex, from chatgpt.com/features/desktop, then open Codex Themes again.")
         }
         guard let running = runningCodex() else { return launch(codexURL, script: script) }
         if let port = debugPort(of: running) {

@@ -1,0 +1,32 @@
+name: Release
+
+# Pushing a tag like v0.2.0 (it must match package.json's version) builds the
+# app on macOS and publishes dist/Codex-Themes.zip as a GitHub release, which
+# install.sh downloads.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check the tag matches package.json
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+
+      - name: Build
+        run: scripts/build-app.sh
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/Codex-Themes.zip --title "Codex Themes ${GITHUB_REF_NAME#v}" --generate-notes

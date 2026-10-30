@@ -82,8 +82,8 @@ if (q.get('ui') === '1') {
     document.body.append(el);
     return el;
   };
-  panel('left:' + (colX - 20) + 'px;top:44px;width:' + (colW + 40) + 'px;height:' + (h - 44) + 'px;background:color-mix(in srgb,' + ui.base + ' 24%,transparent);backdrop-filter:blur(7px) saturate(1.15);mask-image:linear-gradient(to right,transparent,#000 44px,#000 calc(100% - 44px),transparent),linear-gradient(to bottom,transparent,#000 32px);mask-composite:intersect');
-  panel('left:0;top:44px;width:318px;height:' + (h - 44) + 'px;background:color-mix(in srgb,' + ui.base + ' 30%,transparent);backdrop-filter:blur(9px) saturate(1.2);mask-image:linear-gradient(to right,#000 calc(100% - 56px),transparent),linear-gradient(to bottom,transparent,#000 32px);mask-composite:intersect');
+  panel('left:' + (colX - 20) + 'px;top:44px;width:' + (colW + 40) + 'px;height:' + (h - 44) + 'px;background:color-mix(in srgb,' + ui.base + ' 24%,transparent);backdrop-filter:blur(2px) saturate(1.15);mask-image:linear-gradient(to right,transparent,#000 44px,#000 calc(100% - 44px),transparent),linear-gradient(to bottom,transparent,#000 32px);mask-composite:intersect');
+  panel('left:0;top:44px;width:318px;height:' + (h - 44) + 'px;background:color-mix(in srgb,' + ui.base + ' 30%,transparent);backdrop-filter:blur(2px) saturate(1.15);mask-image:linear-gradient(to right,#000 calc(100% - 56px),transparent),linear-gradient(to bottom,transparent,#000 32px);mask-composite:intersect');
   panel('left:' + composer.left + 'px;top:' + composer.top + 'px;width:' + composer.width + 'px;height:' + composer.height + 'px;border-radius:26px;background:' + ui.composer + ';backdrop-filter:blur(22px) saturate(1.4)');
   const copy = panel('left:' + (colX + 16) + 'px;top:96px;width:' + (colW - 32) + 'px;font:15px/1.65 -apple-system,system-ui,sans-serif;color:' + text);
   copy.innerHTML = '<div style="margin-left:auto;width:62%;padding:10px 16px;border-radius:18px;background:' + ui.bubble + '">Can you make the cliff face read a bit better?</div>'

@@ -16,7 +16,9 @@
 
 /* Frosted strips where people read (positioned by glass.js): behind the
    conversation column, and behind the sidebar and icon rail instead of a
-   panel. Feathered edges and a short fade under the title bar keep them part
+   panel. Most of the legibility comes from the tint and the renderer dimming
+   the tiles, so the blur only softens tile edges and the scene stays crisp.
+   Feathered edges and a short fade under the title bar keep the strips part
    of the scene rather than slabs over it. */
 .cx-glass {
   position: fixed;
@@ -24,8 +26,8 @@
   pointer-events: none;
   display: none;
   background-color: color-mix(in srgb, var(--cx-base) 24%, transparent);
-  -webkit-backdrop-filter: blur(7px) saturate(1.15);
-  backdrop-filter: blur(7px) saturate(1.15);
+  -webkit-backdrop-filter: blur(2px) saturate(1.15);
+  backdrop-filter: blur(2px) saturate(1.15);
   -webkit-mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent),
     linear-gradient(to bottom, transparent, #000 32px);
   mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent),
@@ -35,12 +37,10 @@
 }
 
 /* The sidebar strip starts at the window edge, so it only feathers on the
-   right; sidebar text is smaller than the conversation's, so it frosts a
+   right; sidebar text is smaller than the conversation's, so it is tinted a
    little more. */
 .cx-glass-side {
   background-color: color-mix(in srgb, var(--cx-base) 30%, transparent);
-  -webkit-backdrop-filter: blur(9px) saturate(1.2);
-  backdrop-filter: blur(9px) saturate(1.2);
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent), linear-gradient(to bottom, transparent, #000 32px);
   mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent), linear-gradient(to bottom, transparent, #000 32px);
 }

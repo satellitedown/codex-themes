@@ -170,3 +170,7 @@ and publishes `Codex-Themes.zip`; `install.sh` installs the latest release.
 
 Inspired by Marko Vineli's ([@handsher_NGU](https://x.com/handsher_NGU)) fan
 concept of live ASCII wallpapers. The scenes here are original.
+
+## License
+
+[MIT](LICENSE)

@@ -2,6 +2,7 @@
   "name": "codex-themes",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Animated ASCII wallpapers and a /theme picker for the Codex desktop app on macOS.",
   "type": "module",
   "scripts": {

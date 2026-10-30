@@ -1,44 +1,73 @@
+import { MAIN, TRANSCRIPT, sidebarBounds } from './layout.js';
+
 // Margin beyond the transcript column, which already includes its own padding.
-const BLEED = 20;
+const CHAT_BLEED = 20;
+// The sidebar strip runs this far past the sidebar's edge, where it feathers out (styles.css).
+const SIDE_BLEED = 28;
+
+/** The conversation column: transcript width, full height of the main area. */
+function chatBounds() {
+  const main = document.querySelector(MAIN);
+  const column = main?.querySelector(TRANSCRIPT);
+  const watch = [main, column].filter(Boolean);
+  const box = main?.getBoundingClientRect();
+  const col = column?.getBoundingClientRect();
+  if (!box || !col || col.width === 0) return { watch, rect: null };
+  return { watch, rect: { left: col.left - CHAT_BLEED, right: col.right + CHAT_BLEED, top: box.top, bottom: box.bottom } };
+}
+
+/** The sidebar plus the icon rail to its left, from the window edge. */
+function sideStripBounds() {
+  const { watch, rect } = sidebarBounds();
+  return { watch, rect: rect && { left: 0, right: rect.right + SIDE_BLEED, top: rect.top, bottom: rect.bottom } };
+}
+
+function strip(className) {
+  const el = document.createElement('div');
+  el.className = `cx-glass ${className}`;
+  el.setAttribute('aria-hidden', 'true');
+  return el;
+}
+
+const px = (v) => `${Math.round(v)}px`;
 
 /**
- * Frosted strip behind the conversation column: blurs the scene where people
- * read. A fixed sibling right after the wallpaper canvas (same z-index, later
- * in the DOM) so its backdrop is the scene and Codex's UI paints over it;
- * positioned from the transcript column rather than living inside it, so it
- * doesn't scroll with the messages.
+ * Frosted strips where people read: one behind the conversation column, one
+ * behind the sidebar and icon rail (which have no panel of their own), so
+ * both read as content on the scene rather than slabs over it. Fixed siblings
+ * right after the wallpaper canvas (same z-index, later in the DOM): their
+ * backdrop is the scene and Codex's UI paints over them. Positioned from
+ * Codex's layout rather than living inside it, so they don't scroll.
  */
-export class ChatGlass {
+export class ReadingGlass {
   constructor({ signal, after }) {
-    this.el = document.createElement('div');
-    this.el.id = 'cx-glass';
-    this.el.setAttribute('aria-hidden', 'true');
-    after.after(this.el);
+    this.strips = [
+      { el: strip('cx-glass-side'), bounds: sideStripBounds },
+      { el: strip('cx-glass-chat'), bounds: chatBounds },
+    ];
+    after.after(...this.strips.map((s) => s.el));
     this.watched = [];
     this.observer = new ResizeObserver(() => this.track());
     signal.addEventListener('abort', () => {
       this.observer.disconnect();
-      this.el.remove();
+      for (const s of this.strips) s.el.remove();
     }, { once: true });
   }
 
-  /** Re-reads the column bounds; ResizeObserver covers sidebar/panel animations, callers poll for the rest. */
+  /** Re-reads the bounds; ResizeObserver covers sidebar/panel animations, callers poll for the rest. */
   track() {
-    const main = document.querySelector('main[class*="_MainContentSurface_"]');
-    const column = main?.querySelector('[class*="_transcriptContent_"]');
-    this.watch([main, column].filter(Boolean));
-    const box = main?.getBoundingClientRect();
-    const col = column?.getBoundingClientRect();
-    if (!box || !col || col.width === 0) {
-      this.el.classList.remove('cx-on');
-      return;
+    const watch = [];
+    for (const { el, bounds } of this.strips) {
+      const { rect, watch: elements } = bounds();
+      watch.push(...elements);
+      el.classList.toggle('cx-on', rect !== null);
+      if (!rect) continue;
+      el.style.left = px(rect.left);
+      el.style.top = px(rect.top);
+      el.style.width = px(rect.right - rect.left);
+      el.style.height = px(rect.bottom - rect.top);
     }
-    const style = this.el.style;
-    style.left = `${Math.round(col.left - BLEED)}px`;
-    style.width = `${Math.round(col.width + BLEED * 2)}px`;
-    style.top = `${Math.round(box.top)}px`;
-    style.height = `${Math.round(box.height)}px`;
-    this.el.classList.add('cx-on');
+    this.watch(watch);
   }
 
   watch(elements) {

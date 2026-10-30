@@ -1,10 +1,10 @@
 import { subscribe } from '../engine/loop.js';
 import { THEMES } from '../themes/index.js';
+import { SIDEBAR } from './layout.js';
 import { OFF } from './picker.js';
 import { thumbnail } from './thumbs.js';
 
-// The outermost sidebar panel nests further .sidebar-navigation elements.
-const NAV = '.sidebar-navigation:not(.sidebar-navigation *) nav';
+const NAV = `${SIDEBAR} nav`;
 const HOVER_FPS = 12;
 const SUN = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.9" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.6v1.5M8 12.9v1.5M1.6 8h1.5M12.9 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M3.5 12.5l1-1M11.5 4.5l1-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
 const MOON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.3 10.2A5.7 5.7 0 0 1 5.8 2.7a5.7 5.7 0 1 0 7.5 7.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>';

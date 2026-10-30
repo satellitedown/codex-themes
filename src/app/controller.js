@@ -1,7 +1,8 @@
 import { THEME_BY_ID } from '../themes/index.js';
 import { canSetAppearance, setAppearance } from './appearance.js';
 import { activeComposer, clearComposer, composerOf, composerRect, slashQuery } from './composer.js';
-import { ChatGlass } from './glass.js';
+import { ReadingGlass } from './glass.js';
+import { MAIN, sidebarBounds } from './layout.js';
 import { OFF, Picker } from './picker.js';
 import { SidebarSwitcher } from './sidebar.js';
 import { Store } from './store.js';
@@ -47,7 +48,7 @@ export class CodexThemes {
     canSetAppearance().then((available) => {
       if (available && !signal.aborted) this.sidebar.enableSchemeSwitch();
     });
-    this.glass = new ChatGlass({ signal, after: this.wallpaper.canvas });
+    this.glass = new ReadingGlass({ signal, after: this.wallpaper.canvas });
 
     this.scheme = currentScheme();
     this.wallpaper.setReducedMotion(prefersReducedMotion());
@@ -142,11 +143,12 @@ export class CodexThemes {
     const lanes = [];
     const editor = activeComposer();
     const rect = editor ? (editor.closest('[class*="_ComposerLayoutRoot_"]') ?? editor).getBoundingClientRect() : null;
-    const main = document.querySelector('main[class*="_MainContentSurface_"]')?.getBoundingClientRect();
+    const main = document.querySelector(MAIN)?.getBoundingClientRect();
     if (rect) lanes.push({ x0: rect.left - 12, x1: rect.right + 12, y0: main ? main.top : 0, y1: rect.bottom + 8 });
     else if (main && main.width > 0) lanes.push({ x0: main.left + 16, x1: main.right - 16, y0: main.top, y1: main.bottom });
-    const side = document.querySelector('.sidebar-navigation:not(.sidebar-navigation *)')?.getBoundingClientRect();
-    if (side && side.width > 40) lanes.push({ x0: side.left, x1: side.right, y0: side.top, y1: side.bottom });
+    // The sidebar has no panel of its own: dim from the window edge so the icon rail reads too.
+    const side = sidebarBounds().rect;
+    if (side) lanes.push({ x0: 0, x1: side.right, y0: side.top, y1: side.bottom });
     this.wallpaper.setLanes(lanes.map((l) => ({ x0: Math.round(l.x0), x1: Math.round(l.x1), y0: Math.round(l.y0), y1: Math.round(l.y1) })));
   }
 

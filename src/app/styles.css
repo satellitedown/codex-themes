@@ -14,9 +14,11 @@
   display: block;
 }
 
-/* Frosted strip behind the conversation column (positioned by glass.js).
-   Soft side edges and a short fade under the title bar. */
-#cx-glass {
+/* Frosted strips where people read (positioned by glass.js): behind the
+   conversation column, and behind the sidebar and icon rail instead of a
+   panel. Feathered edges and a short fade under the title bar keep them part
+   of the scene rather than slabs over it. */
+.cx-glass {
   position: fixed;
   z-index: -1;
   pointer-events: none;
@@ -32,7 +34,18 @@
   mask-composite: intersect;
 }
 
-:root[data-cx-wallpaper] #cx-glass.cx-on {
+/* The sidebar strip starts at the window edge, so it only feathers on the
+   right; sidebar text is smaller than the conversation's, so it frosts a
+   little more. */
+.cx-glass-side {
+  background-color: color-mix(in srgb, var(--cx-base) 30%, transparent);
+  -webkit-backdrop-filter: blur(9px) saturate(1.2);
+  backdrop-filter: blur(9px) saturate(1.2);
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent), linear-gradient(to bottom, transparent, #000 32px);
+  mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent), linear-gradient(to bottom, transparent, #000 32px);
+}
+
+:root[data-cx-wallpaper] .cx-glass.cx-on {
   display: block;
 }
 
@@ -52,14 +65,17 @@
   background-color: transparent !important;
 }
 
-/* Sidebar: a light tint of frosted glass so the scene shows through; tiles
-   behind it are dimmed by the renderer for legibility. Only the outermost
-   panel is tinted (the sidebar nests .sidebar-navigation elements). */
+/* Sidebar: no panel of its own; it sits on its frosted strip like the
+   conversation does, and the renderer dims the tiles behind it. Codex paints
+   only the outermost panel (it nests .sidebar-navigation elements). */
 :root[data-cx-wallpaper] .sidebar-navigation:not(.sidebar-navigation *) {
-  background-color: color-mix(in srgb, var(--cx-sidebar) 42%, transparent) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(1.5);
-  backdrop-filter: blur(14px) saturate(1.5);
-  transition: background-color 0.5s ease;
+  background-color: transparent !important;
+}
+
+/* Without a panel, the hairline Codex draws between sidebar and page would
+   be a stray edge in the scene. */
+:root[data-cx-wallpaper] [class*='_MainContentLeftBorder_'] {
+  border-left-color: transparent !important;
 }
 
 /* A collapsed sidebar peeking over the page needs a solid backing to read. */

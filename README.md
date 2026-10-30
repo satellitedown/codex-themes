@@ -56,10 +56,11 @@ checked, so nothing inside `ChatGPT.app` is modified. Instead:
    and registers `dist/codex-themes.js` to run on every page load. Utility
    windows (quick ask, pet overlay) are skipped.
 3. The engine (`src/`) draws the scene on a canvas behind Codex's UI. Its CSS
-   makes the window shell transparent, turns the sidebar, composer and settings
-   panels into tinted glass, puts a frosted strip behind the conversation,
-   retints menus and popovers to the theme, and adds the picker and the sidebar
-   switcher.
+   makes the window shell transparent, puts frosted strips behind the sidebar
+   and the conversation (the sidebar has no panel of its own, so it sits on
+   the scene like the chat does), turns the composer and settings panels into
+   tinted glass, retints menus and popovers to the theme, and adds the picker
+   and the sidebar switcher.
 
 Per frame, a scene writes cells into a `Field` (tile, bare glyph or solid
 block, with ink and opacity). The renderer blits them from a pre-rendered glyph
@@ -88,9 +89,10 @@ npm run preview -- waterfall --out /tmp/preview   # day + night, framed like the
 npm run preview -- --raw --size 1920x1080         # every theme, scene only
 ```
 
-The default frame mimics the app: reading areas dimmed, glass sidebar, chat
-column and composer, sample text. Options: `--scheme light|dark|both`,
-`--time <seconds>`, `--size WxH`, `--dpr N`, `--raw`, `--out <dir>`.
+The default frame mimics the app: reading areas dimmed, frosted strips behind
+the sidebar and chat, the glass composer, and sample text. Options:
+`--scheme light|dark|both`, `--time <seconds>`, `--size WxH`, `--dpr N`,
+`--raw`, `--out <dir>`.
 
 ## Caveats
 

@@ -147,10 +147,11 @@ the sidebar and chat, the glass composer, and sample text. Options:
 
 ### Releasing
 
-Bump `version` in `package.json`, commit, then tag and push:
+Bump the version with `npm version X.Y.Z --no-git-tag-version` (it updates
+`package.json` and the lockfile), commit, then tag and push:
 
 ```sh
-git tag v0.2.0 && git push origin v0.2.0
+git tag vX.Y.Z && git push origin vX.Y.Z
 ```
 
 The [Release workflow](.github/workflows/release.yml) builds the app on macOS

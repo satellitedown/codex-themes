@@ -104,6 +104,12 @@ func waitForExit(_ app: NSRunningApplication, deadline: Date, completion: @escap
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { waitForExit(app, deadline: deadline, completion: completion) }
 }
 
+/// Whether a process still exists. LaunchServices' app list can briefly drop a running
+/// Codex while it starts up, so liveness comes from the kernel.
+func isRunning(_ pid: pid_t) -> Bool {
+    kill(pid, 0) == 0 || errno == EPERM
+}
+
 // MARK: - Login item
 
 /// Writes the LaunchAgent that starts the helper at login, pointing at this copy of
@@ -302,17 +308,18 @@ final class Helper: NSObject, NSApplicationDelegate {
         return true
     }
 
+    /// Codex processes that are alive. LaunchServices keeps listing one for a moment
+    /// after it exits, and adds a new one only some time after it starts.
     private func codexApps() -> [NSRunningApplication] {
-        NSRunningApplication.runningApplications(withBundleIdentifier: codexBundleID).filter { !$0.isTerminated }
+        NSRunningApplication.runningApplications(withBundleIdentifier: codexBundleID).filter { !$0.isTerminated && isRunning($0.processIdentifier) }
     }
 
-    /// Runs whenever any app starts or quits.
+    /// Runs whenever any app starts or quits. The app list only ever adds Codex
+    /// processes; whether one is gone is checked with the kernel.
     private func runningAppsChanged() {
-        let apps = codexApps()
-        let alive = Set(apps.map(\.processIdentifier))
-        seen.formIntersection(alive)
-        if attachedPID != 0 && !alive.contains(attachedPID) { codexQuit() }
-        for app in apps where seen.insert(app.processIdentifier).inserted { codexStarted(app) }
+        seen = seen.filter(isRunning)
+        if attachedPID != 0 && !isRunning(attachedPID) { codexQuit() }
+        for app in codexApps() where seen.insert(app.processIdentifier).inserted { codexStarted(app) }
     }
 
     private func codexStarted(_ app: NSRunningApplication) {
@@ -329,10 +336,11 @@ final class Helper: NSObject, NSApplicationDelegate {
         guard restarts.count < restartLimit else {
             return log("Codex keeps starting without the DevTools port; leaving pid \(app.processIdentifier) alone")
         }
+        // A signal rather than a quit event: it works before Codex has finished launching.
+        // If Codex already quit on its own, there is nothing to reopen.
+        guard kill(app.processIdentifier, SIGTERM) == 0 else { return }
         restarts.append(now)
         log("Codex pid \(app.processIdentifier) started without the DevTools port; reopening it with one")
-        // A signal rather than a quit event: it works before Codex has finished launching.
-        kill(app.processIdentifier, SIGTERM)
         waitForExit(app, deadline: now.addingTimeInterval(10)) { [weak self] exited in
             if !exited { app.forceTerminate() }
             waitForExit(app, deadline: Date().addingTimeInterval(5)) { exited in
@@ -405,7 +413,7 @@ final class Helper: NSObject, NSApplicationDelegate {
         waitForEndpoint(port: port, deadline: Date().addingTimeInterval(60)) { [weak self] browserURL in
             guard let self, self.attachedPID == pid else { return }
             guard let browserURL else {
-                if self.codexApps().contains(where: { $0.processIdentifier == pid }) {
+                if isRunning(pid) {
                     self.alert("Codex started, but its DevTools endpoint on port \(port) never answered, so it has no wallpaper.")
                 }
                 return
@@ -419,11 +427,11 @@ final class Helper: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// The socket also drops when Codex quits; runningAppsChanged handles that case.
+    /// The socket drops when Codex quits, and rarely while it runs.
     private func connectionDropped(port: Int, pid: pid_t) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
-            guard let self, self.attachedPID == pid, self.codexApps().contains(where: { $0.processIdentifier == pid }) else { return }
-            self.connect(port: port, pid: pid)
+            guard let self, self.attachedPID == pid else { return }
+            if isRunning(pid) { self.connect(port: port, pid: pid) } else { self.codexQuit() }
         }
     }
 

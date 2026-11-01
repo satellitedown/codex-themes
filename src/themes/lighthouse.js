@@ -91,7 +91,7 @@ export default {
         shipLight: solid('#ffd27a'),
         shipRed: solid('#ff5a5a'),
       },
-      ui: { base: '#cde9f6', sidebar: 'rgba(234, 246, 252, 0.66)', composer: 'rgba(250, 253, 255, 0.86)', accent: '#2a7fc0', bubble: 'rgba(42, 127, 192, 0.13)' },
+      ui: { base: '#cde9f6', composer: 'rgba(250, 253, 255, 0.86)', accent: '#2a7fc0', bubble: 'rgba(42, 127, 192, 0.13)' },
       lane: 0.55,
     },
     dark: {
@@ -163,7 +163,7 @@ export default {
         shipLight: solid('#ffd27a'),
         shipRed: solid('#ff5050'),
       },
-      ui: { base: '#0a1631', sidebar: 'rgba(6, 12, 30, 0.62)', composer: 'rgba(9, 18, 40, 0.86)', accent: '#ffd27a', bubble: 'rgba(255, 210, 122, 0.18)' },
+      ui: { base: '#0a1631', composer: 'rgba(9, 18, 40, 0.86)', accent: '#ffd27a', bubble: 'rgba(255, 210, 122, 0.18)' },
       lane: 0.62,
     },
   },

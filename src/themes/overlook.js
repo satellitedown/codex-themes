@@ -96,7 +96,7 @@ export default {
         pants: solid('#2c3d63'),
         screen: solid('#dcedff'),
       },
-      ui: { base: '#cdebf9', sidebar: 'rgba(234, 246, 253, 0.66)', composer: 'rgba(250, 253, 255, 0.86)', accent: '#2a82c4', bubble: 'rgba(42, 130, 196, 0.13)' },
+      ui: { base: '#cdebf9', composer: 'rgba(250, 253, 255, 0.86)', accent: '#2a82c4', bubble: 'rgba(42, 130, 196, 0.13)' },
       lane: 0.55,
     },
     dark: {
@@ -168,7 +168,7 @@ export default {
         pants: solid('#05030c'),
         screen: solid('#8cf6ff'),
       },
-      ui: { base: '#13051f', sidebar: 'rgba(17, 6, 32, 0.62)', composer: 'rgba(22, 9, 42, 0.86)', accent: '#ff4fd8', bubble: 'rgba(255, 79, 216, 0.2)' },
+      ui: { base: '#13051f', composer: 'rgba(22, 9, 42, 0.86)', accent: '#ff4fd8', bubble: 'rgba(255, 79, 216, 0.2)' },
       lane: 0.62,
     },
   },

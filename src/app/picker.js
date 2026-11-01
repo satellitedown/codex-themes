@@ -6,6 +6,8 @@ export const OFF = 'off';
 const THUMB_FPS = 10;
 const CHECK = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.5l2.2 2.2L9.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const OFF_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5.6 14.4l8.8-8.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+const SUN = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.9" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.6v1.5M8 12.9v1.5M1.6 8h1.5M12.9 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M3.5 12.5l1-1M11.5 4.5l1-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+const MOON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.3 10.2A5.7 5.7 0 0 1 5.8 2.7a5.7 5.7 0 1 0 7.5 7.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>';
 
 const el = (tag, className, html) => {
   const node = document.createElement(tag);
@@ -17,13 +19,15 @@ const el = (tag, className, html) => {
 /**
  * The /theme panel: a row of live thumbnail cards anchored above the
  * composer. Arrow keys preview in the real wallpaper, Enter applies, Esc
- * reverts; clicking a card applies it immediately.
+ * reverts; clicking a card applies it immediately. Day / Night in the header
+ * switches Codex's appearance, which picks each wallpaper's day or night scene.
  */
 export class Picker {
-  constructor({ signal, onPreview, onApply, onClose }) {
+  constructor({ signal, onPreview, onApply, onClose, onScheme }) {
     this.onPreview = onPreview;
     this.onApply = onApply;
     this.onClose = onClose;
+    this.onScheme = onScheme;
     this.items = [...THEMES.map((theme) => ({ id: theme.id, name: theme.name, theme })), { id: OFF, name: 'Off', theme: null }];
     this.isOpen = false;
     this.root = el('div', 'cx-picker');
@@ -33,9 +37,21 @@ export class Picker {
 
     const head = el('div', 'cx-picker-head');
     head.append(el('span', 'cx-chip', '/theme'), el('span', 'cx-title', 'ASCII wallpapers'));
-    this.variant = el('span', 'cx-variant');
-    this.variant.title = 'Follows Codex appearance: light shows the day scene, dark the night scene';
-    head.append(this.variant, el('span', 'cx-hints', '<kbd>←</kbd><kbd>→</kbd> browse · <kbd>↵</kbd> apply · <kbd>esc</kbd> close'));
+    this.mode = el('div', 'cx-mode');
+    this.mode.setAttribute('role', 'group');
+    this.mode.setAttribute('aria-label', 'Day or night');
+    this.modeButtons = [['light', SUN, 'Day'], ['dark', MOON, 'Night']].map(([scheme, icon, label]) => {
+      const button = el('button', null, `${icon}${label}`);
+      button.type = 'button';
+      button.dataset.scheme = scheme;
+      // Keep focus, and with it a typed /theme draft, in the composer.
+      button.addEventListener('mousedown', (event) => event.preventDefault(), { signal });
+      button.addEventListener('click', () => this.onScheme(scheme), { signal });
+      return button;
+    });
+    this.mode.append(...this.modeButtons);
+    this.enableSchemeSwitch(false);
+    head.append(this.mode, el('span', 'cx-hints', '<kbd>←</kbd><kbd>→</kbd> browse · <kbd>↵</kbd> apply · <kbd>esc</kbd> close'));
 
     this.list = el('div', 'cx-cards');
     this.list.setAttribute('role', 'listbox');
@@ -85,17 +101,32 @@ export class Picker {
   open({ anchor, applied, scheme, query = '' }) {
     this.anchor = anchor;
     this.applied = applied;
-    this.scheme = scheme;
     this.isOpen = true;
     this.root.hidden = false;
-    this.variant.textContent = scheme === 'light' ? '☀ day' : '☾ night';
     document.documentElement.classList.add('cx-picker-open');
     this.position();
-    this.startThumbs();
+    this.setScheme(scheme);
     this.selected = Math.max(0, this.items.findIndex((item) => item.id === applied));
     this.renderState();
     if (query) this.filter(query);
     requestAnimationFrame(() => this.root.classList.add('cx-in'));
+  }
+
+  /** Day / Night writes Codex's appearance setting; without access to it the control only shows the current scheme. */
+  enableSchemeSwitch(enabled = true) {
+    for (const button of this.modeButtons) {
+      button.disabled = !enabled;
+      button.title = enabled
+        ? `Switch Codex to its ${button.dataset.scheme} appearance (${button.dataset.scheme === 'light' ? 'day' : 'night'} scenes)`
+        : 'Day and night follow Codex’s appearance (Settings → Appearance)';
+    }
+  }
+
+  /** Shows which scene the wallpapers use, and redraws the thumbnails when it changes. */
+  setScheme(scheme) {
+    this.scheme = scheme;
+    for (const button of this.modeButtons) button.setAttribute('aria-pressed', String(button.dataset.scheme === scheme));
+    if (this.isOpen) this.startThumbs();
   }
 
   close(reason) {

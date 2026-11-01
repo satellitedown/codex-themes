@@ -155,7 +155,7 @@ export default {
         aurora2: solid('#38e0d0'),
         aurora3: solid('#b47bff'),
       },
-      ui: { base: '#e3f2fb', sidebar: 'rgba(240, 248, 253, 0.68)', composer: 'rgba(252, 254, 255, 0.88)', accent: '#3a7cc0', bubble: 'rgba(58, 124, 192, 0.13)' },
+      ui: { base: '#e3f2fb', composer: 'rgba(252, 254, 255, 0.88)', accent: '#3a7cc0', bubble: 'rgba(58, 124, 192, 0.13)' },
       lane: 0.55,
     },
     dark: {
@@ -214,7 +214,7 @@ export default {
         aurora2: solid('#38e0d0'),
         aurora3: solid('#b47bff'),
       },
-      ui: { base: '#061428', sidebar: 'rgba(4, 12, 26, 0.62)', composer: 'rgba(6, 18, 36, 0.86)', accent: '#5dffb0', bubble: 'rgba(93, 255, 176, 0.16)' },
+      ui: { base: '#061428', composer: 'rgba(6, 18, 36, 0.86)', accent: '#5dffb0', bubble: 'rgba(93, 255, 176, 0.16)' },
       lane: 0.62,
     },
   },

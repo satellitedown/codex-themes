@@ -155,7 +155,7 @@ export default {
         fly: tone('#f4ff9a', 0.3),
         bird: solid('#2e4a5c'),
       },
-      ui: { base: '#d3eef8', sidebar: 'rgba(236, 248, 250, 0.66)', composer: 'rgba(250, 254, 255, 0.86)', accent: '#258fb3', bubble: 'rgba(37, 143, 179, 0.13)' },
+      ui: { base: '#d3eef8', composer: 'rgba(250, 254, 255, 0.86)', accent: '#258fb3', bubble: 'rgba(37, 143, 179, 0.13)' },
       lane: 0.55,
     },
     dark: {
@@ -215,7 +215,7 @@ export default {
         fly: tone('#eaff8a', 0.3),
         bird: solid('#0e2420'),
       },
-      ui: { base: '#0a1a2c', sidebar: 'rgba(6, 16, 28, 0.62)', composer: 'rgba(8, 22, 36, 0.86)', accent: '#7fc8f0', bubble: 'rgba(127, 200, 240, 0.18)' },
+      ui: { base: '#0a1a2c', composer: 'rgba(8, 22, 36, 0.86)', accent: '#7fc8f0', bubble: 'rgba(127, 200, 240, 0.18)' },
       lane: 0.62,
     },
   },

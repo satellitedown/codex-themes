@@ -121,7 +121,7 @@ export default {
         lantern: '#ffa640', lanternCore: '#ffe2a0', lanternDim: '#c8702e',
         flowerPink: bloom('#408c43', '#ff9ccb'), flowerYellow: bloom('#408c43', '#ffe46e'), flowerWhite: bloom('#408c43', '#ffffff'),
       }),
-      ui: { base: '#e9f2ec', sidebar: 'rgba(242, 248, 244, 0.68)', composer: 'rgba(253, 254, 252, 0.88)', accent: '#d9714f', bubble: 'rgba(217, 113, 79, 0.13)' },
+      ui: { base: '#e9f2ec', composer: 'rgba(253, 254, 252, 0.88)', accent: '#d9714f', bubble: 'rgba(217, 113, 79, 0.13)' },
       lane: 0.55,
     },
     dark: {
@@ -164,7 +164,7 @@ export default {
         lantern: '#ff9a35', lanternCore: '#ffd47e', lanternDim: '#d06a2a',
         flowerPink: bloom('#0a0e2a', '#8a64b0'), flowerYellow: bloom('#0a0e2a', '#a08cc0'), flowerWhite: bloom('#0a0e2a', '#aab0e0'),
       }),
-      ui: { base: '#111a44', sidebar: 'rgba(9, 13, 36, 0.62)', composer: 'rgba(13, 18, 48, 0.86)', accent: '#ffb04a', bubble: 'rgba(255, 176, 74, 0.18)' },
+      ui: { base: '#111a44', composer: 'rgba(13, 18, 48, 0.86)', accent: '#ffb04a', bubble: 'rgba(255, 176, 74, 0.18)' },
       lane: 0.62,
     },
   },

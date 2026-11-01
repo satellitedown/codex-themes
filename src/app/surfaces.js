@@ -1,13 +1,7 @@
 import { css, mix } from '../engine/color.js';
 import styles from './styles.css';
 
-const UI_VARS = {
-  base: '--cx-base',
-  sidebar: '--cx-sidebar',
-  composer: '--cx-composer',
-  accent: '--cx-accent',
-  bubble: '--cx-bubble',
-};
+const UI_VARS = { base: '--cx-base', composer: '--cx-composer', accent: '--cx-accent', bubble: '--cx-bubble' };
 
 /**
  * Codex's neutral surface tokens pulled toward the scene's base colour, so

@@ -195,7 +195,7 @@ export default {
         neon: '#ff5a9a',
         neonTube: '#8fc8e0',
       }),
-      ui: { base: '#efe2d0', sidebar: 'rgba(248, 240, 228, 0.7)', composer: 'rgba(255, 252, 247, 0.88)', accent: '#b0663a', bubble: 'rgba(176, 102, 58, 0.13)' },
+      ui: { base: '#efe2d0', composer: 'rgba(255, 252, 247, 0.88)', accent: '#b0663a', bubble: 'rgba(176, 102, 58, 0.13)' },
       lane: 0.55,
     },
     dark: {
@@ -323,7 +323,7 @@ export default {
         neon: '#ff5fa8',
         neonTube: '#5fe0ff',
       }),
-      ui: { base: '#1e1510', sidebar: 'rgba(28, 18, 13, 0.64)', composer: 'rgba(36, 24, 18, 0.88)', accent: '#ffb35c', bubble: 'rgba(255, 179, 92, 0.18)' },
+      ui: { base: '#1e1510', composer: 'rgba(36, 24, 18, 0.88)', accent: '#ffb35c', bubble: 'rgba(255, 179, 92, 0.18)' },
       lane: 0.62,
     },
   },

@@ -1,15 +1,31 @@
-// Codex Themes launcher.
+// Codex Themes helper.
 //
-// Opens Codex (ChatGPT.app, bundle id com.openai.codex) with a localhost
-// DevTools port, injects codex-themes.js into every Codex window over the
-// Chrome DevTools Protocol, keeps doing so for new windows and reloads, and
-// exits when Codex quits. Codex's bundle and code signature are never touched.
+// Keeps Codex (in ChatGPT.app, bundle id com.openai.codex) themed however it is
+// opened. Codex only accepts a DevTools connection when it starts with
+// --remote-debugging-port, so the helper opens Codex with a localhost port, and
+// when Codex starts without one (Dock, Spotlight, login, its own relaunch after
+// an update) it quits that fresh instance and reopens it with one. It injects
+// codex-themes.js into every Codex window over the Chrome DevTools Protocol and
+// keeps doing so for new windows and reloads.
+//
+// The helper has no Dock icon, keeps running after Codex quits, and writes a
+// LaunchAgent so it starts again at login. Codex's bundle and code signature are
+// never touched.
 
 import AppKit
 import Darwin
 
 let codexBundleID = "com.openai.codex"
 let portFlag = "--remote-debugging-port="
+let agentLabel = "dev.codexthemes.agent"
+/// Passed by the LaunchAgent at login: watch for Codex without opening it.
+let agentFlag = "--agent"
+/// Posted by a second copy of the app (opened while the helper runs) to the running helper.
+let openRequest = Notification.Name("dev.codexthemes.open")
+/// More fresh Codex restarts than this within the window means Codex isn't keeping the
+/// port (for example, it relaunches itself without it), so the helper stops trying.
+let restartLimit = 3
+let restartWindow: TimeInterval = 60
 
 // MARK: - Logging
 
@@ -88,6 +104,39 @@ func waitForExit(_ app: NSRunningApplication, deadline: Date, completion: @escap
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { waitForExit(app, deadline: deadline, completion: completion) }
 }
 
+// MARK: - Login item
+
+/// Writes the LaunchAgent that starts the helper at login, pointing at this copy of
+/// the app (rewritten when the app moves). launchd reads it at the next login; in
+/// this session the helper is already running.
+func registerLoginItem() {
+    let bundlePath = Bundle.main.bundlePath
+    guard let executable = Bundle.main.executablePath else { return }
+    if bundlePath.contains("/AppTranslocation/") {
+        log("running from a translocated copy; not registering the login item")
+        return
+    }
+    let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/LaunchAgents/\(agentLabel).plist")
+    let plist: NSDictionary = [
+        "Label": agentLabel,
+        "ProgramArguments": [executable, agentFlag],
+        "RunAtLoad": true,
+        "KeepAlive": ["SuccessfulExit": false],
+        "LimitLoadToSessionType": "Aqua",
+        // Lists it as "Codex Themes" in System Settings → General → Login Items.
+        "AssociatedBundleIdentifiers": [Bundle.main.bundleIdentifier ?? "dev.codexthemes.launcher"],
+    ]
+    let existing = (try? Data(contentsOf: url)).flatMap { try? PropertyListSerialization.propertyList(from: $0, format: nil) as? NSDictionary }
+    if existing == plist { return }
+    do {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0).write(to: url, options: .atomic)
+        log("registered login item \(url.path)")
+    } catch {
+        log("couldn't register login item: \(error.localizedDescription)")
+    }
+}
+
 // MARK: - DevTools client
 
 /// One browser-level CDP connection; attaches to each Codex page with flat sessions.
@@ -112,6 +161,13 @@ final class DevTools: NSObject {
         receive()
         send("Target.setDiscoverTargets", ["discover": true])
         getTargetsID = send("Target.getTargets")
+    }
+
+    func disconnect() {
+        onDisconnect = nil
+        socket?.cancel(with: .goingAway, reason: nil)
+        socket = nil
+        session.invalidateAndCancel()
     }
 
     @discardableResult
@@ -187,90 +243,195 @@ final class DevTools: NSObject {
     }
 }
 
-// MARK: - App
+// MARK: - Helper
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class Helper: NSObject, NSApplicationDelegate {
+    private let launchedAtLogin = CommandLine.arguments.contains(agentFlag)
+    private var script = ""
     private var devtools: DevTools?
-    private var codexPID: pid_t = 0
+    private var attachedPID: pid_t = 0
+    /// Codex processes already handled, so each new one is considered exactly once.
+    private var seen = Set<pid_t>()
+    private var restarts: [Date] = []
+    private var appsObservation: NSKeyValueObservation?
+    private var prompting = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(appTerminated(_:)), name: NSWorkspace.didTerminateApplicationNotification, object: nil)
-        start()
+        if handOffToRunningHelper() { return }
+        guard let scriptURL = Bundle.main.url(forResource: "codex-themes", withExtension: "js"),
+              let script = try? String(contentsOf: scriptURL, encoding: .utf8) else {
+            alert("The theme bundle is missing from Codex Themes.app. Reinstall Codex Themes from github.com/satellitedown/codex-themes.")
+            return NSApp.terminate(nil)
+        }
+        self.script = script
+        log(launchedAtLogin ? "helper started at login" : "helper started")
+        if Bundle.main.bundlePath.contains("/AppTranslocation/") {
+            alert("Move Codex Themes to the Applications folder and open it from there, so it can start at login.")
+        }
+        registerLoginItem()
+        DistributedNotificationCenter.default().addObserver(self, selector: #selector(openRequested(_:)), name: openRequest, object: nil, suspensionBehavior: .deliverImmediately)
+        // Codex instances running now are handled below; the observer handles every later one.
+        seen = Set(codexApps().map(\.processIdentifier))
+        appsObservation = NSWorkspace.shared.observe(\.runningApplications) { [weak self] _, _ in
+            self?.runningAppsChanged()
+        }
+        if launchedAtLogin { adoptRunningCodex() } else { openCodex() }
     }
 
-    /// Clicking Codex Themes again (Dock, Spotlight) just brings Codex forward.
+    /// Opening Codex Themes again (Finder, Spotlight) while it runs opens Codex.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        runningCodex()?.activate()
+        openCodex()
         return false
     }
 
-    @objc private func appTerminated(_ notification: Notification) {
-        guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-              app.bundleIdentifier == codexBundleID, app.processIdentifier == codexPID else { return }
-        log("Codex quit; exiting")
+    @objc private func openRequested(_ notification: Notification) {
+        openCodex()
+    }
+
+    /// One helper per user: a second copy hands "open Codex" to the running one and quits.
+    private func handOffToRunningHelper() -> Bool {
+        let me = ProcessInfo.processInfo.processIdentifier
+        guard let bundleID = Bundle.main.bundleIdentifier,
+              NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).contains(where: { $0.processIdentifier != me && !$0.isTerminated })
+        else { return false }
+        if !launchedAtLogin {
+            DistributedNotificationCenter.default().postNotificationName(openRequest, object: nil, userInfo: nil, deliverImmediately: true)
+        }
+        log("helper already running; \(launchedAtLogin ? "exiting" : "asked it to open Codex")")
         NSApp.terminate(nil)
+        return true
     }
 
-    private func runningCodex() -> NSRunningApplication? {
-        NSRunningApplication.runningApplications(withBundleIdentifier: codexBundleID).first { !$0.isTerminated }
+    private func codexApps() -> [NSRunningApplication] {
+        NSRunningApplication.runningApplications(withBundleIdentifier: codexBundleID).filter { !$0.isTerminated }
     }
 
-    private func start() {
-        guard let scriptURL = Bundle.main.url(forResource: "codex-themes", withExtension: "js"),
-              let script = try? String(contentsOf: scriptURL, encoding: .utf8) else {
-            return fail("The theme bundle is missing from Codex Themes.app. Reinstall Codex Themes from github.com/satellitedown/codex-themes.")
+    /// Runs whenever any app starts or quits.
+    private func runningAppsChanged() {
+        let apps = codexApps()
+        let alive = Set(apps.map(\.processIdentifier))
+        seen.formIntersection(alive)
+        if attachedPID != 0 && !alive.contains(attachedPID) { codexQuit() }
+        for app in apps where seen.insert(app.processIdentifier).inserted { codexStarted(app) }
+    }
+
+    private func codexStarted(_ app: NSRunningApplication) {
+        if let port = debugPort(of: app) { return attach(port: port, pid: app.processIdentifier) }
+        // Opened some other way: Dock, Spotlight, login, or Codex relaunching itself after
+        // an update. It has only just started, so reopening it with the port loses nothing.
+        reopenWithPort(app)
+    }
+
+    /// Quits a Codex that has only just started and opens it again with the DevTools port.
+    private func reopenWithPort(_ app: NSRunningApplication) {
+        let now = Date()
+        restarts = restarts.filter { now.timeIntervalSince($0) < restartWindow }
+        guard restarts.count < restartLimit else {
+            return log("Codex keeps starting without the DevTools port; leaving pid \(app.processIdentifier) alone")
         }
+        restarts.append(now)
+        log("Codex pid \(app.processIdentifier) started without the DevTools port; reopening it with one")
+        // A signal rather than a quit event: it works before Codex has finished launching.
+        kill(app.processIdentifier, SIGTERM)
+        waitForExit(app, deadline: now.addingTimeInterval(10)) { [weak self] exited in
+            if !exited { app.forceTerminate() }
+            waitForExit(app, deadline: Date().addingTimeInterval(5)) { exited in
+                guard exited else { return log("Codex pid \(app.processIdentifier) didn't quit") }
+                self?.launchCodex()
+            }
+        }
+    }
+
+    /// Opening Codex Themes opens Codex with its wallpaper.
+    private func openCodex() {
+        guard let app = codexApps().first else { return launchCodex() }
+        if let port = debugPort(of: app) {
+            attach(port: port, pid: app.processIdentifier)
+            app.activate()
+            return
+        }
+        guard !prompting else { return }
+        prompting = true
+        let restart = confirmRestart()
+        prompting = false
+        guard restart else { return }
+        log("restarting Codex pid \(app.processIdentifier)")
+        app.terminate()
+        waitForExit(app, deadline: Date().addingTimeInterval(30)) { [weak self] exited in
+            guard exited else { return self?.alert("Codex didn't quit, so it has no wallpaper yet. Quit Codex and open it again.") ?? () }
+            self?.launchCodex()
+        }
+    }
+
+    /// At login: theme a Codex that is already running, when that loses no work.
+    private func adoptRunningCodex() {
+        guard let app = codexApps().first else { return }
+        if let port = debugPort(of: app) { return attach(port: port, pid: app.processIdentifier) }
+        if let launched = app.launchDate, Date().timeIntervalSince(launched) < 30 {
+            reopenWithPort(app) // started with the session, e.g. as a login item
+        } else {
+            log("Codex pid \(app.processIdentifier) is running without the DevTools port; it gets a wallpaper the next time it starts")
+        }
+    }
+
+    private func launchCodex() {
         guard let codexURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: codexBundleID) else {
-            return fail("Codex isn't installed. Get the ChatGPT desktop app, which includes Codex, from chatgpt.com/features/desktop, then open Codex Themes again.")
+            return alert("Codex isn't installed. Get the ChatGPT desktop app, which includes Codex, from chatgpt.com/features/desktop.")
         }
-        guard let running = runningCodex() else { return launch(codexURL, script: script) }
-        if let port = debugPort(of: running) {
-            log("Codex already running on port \(port)")
-            return attach(port: port, pid: running.processIdentifier, script: script)
-        }
-        guard confirmRestart() else { return NSApp.terminate(nil) }
-        log("restarting Codex")
-        running.terminate()
-        waitForExit(running, deadline: Date().addingTimeInterval(30)) { [weak self] exited in
-            guard exited else { return self?.fail("Codex didn't quit, so themes couldn't be turned on. Quit Codex and open Codex Themes again.") ?? () }
-            self?.launch(codexURL, script: script)
-        }
-    }
-
-    private func launch(_ codexURL: URL, script: String) {
-        guard let port = freePort() else { return fail("No free local port for the DevTools connection.") }
+        guard let port = freePort() else { return alert("No free local port for the DevTools connection.") }
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.arguments = ["\(portFlag)\(port)"]
         configuration.activates = true
         NSWorkspace.shared.openApplication(at: codexURL, configuration: configuration) { [weak self] app, error in
             DispatchQueue.main.async {
-                guard let app else { return self?.fail("Couldn't open Codex: \(error?.localizedDescription ?? "unknown error").") ?? () }
+                guard let self else { return }
+                guard let app else { return self.alert("Couldn't open Codex: \(error?.localizedDescription ?? "unknown error").") }
                 log("launched Codex pid \(app.processIdentifier) on port \(port)")
-                self?.attach(port: port, pid: app.processIdentifier, script: script)
+                // The app observer may not have seen it yet.
+                if self.seen.insert(app.processIdentifier).inserted { self.codexStarted(app) }
             }
         }
     }
 
-    private func attach(port: Int, pid: pid_t, script: String) {
-        codexPID = pid
+    private func attach(port: Int, pid: pid_t) {
+        guard attachedPID != pid else { return }
+        devtools?.disconnect()
+        devtools = nil
+        attachedPID = pid
+        connect(port: port, pid: pid)
+    }
+
+    private func connect(port: Int, pid: pid_t) {
         waitForEndpoint(port: port, deadline: Date().addingTimeInterval(60)) { [weak self] browserURL in
-            guard let self else { return }
-            guard let browserURL else { return self.fail("Codex started, but its DevTools endpoint on port \(port) never answered.") }
-            let devtools = DevTools(script: script)
-            devtools.onDisconnect = { [weak self] in self?.reconnect(port: port, pid: pid, script: script) }
+            guard let self, self.attachedPID == pid else { return }
+            guard let browserURL else {
+                if self.codexApps().contains(where: { $0.processIdentifier == pid }) {
+                    self.alert("Codex started, but its DevTools endpoint on port \(port) never answered, so it has no wallpaper.")
+                }
+                return
+            }
+            self.devtools?.disconnect()
+            let devtools = DevTools(script: self.script)
+            devtools.onDisconnect = { [weak self] in self?.connectionDropped(port: port, pid: pid) }
             devtools.connect(browserURL)
             self.devtools = devtools
             log("connected to \(browserURL.absoluteString)")
         }
     }
 
-    /// The socket also drops when Codex quits; the terminate observer covers that case.
-    private func reconnect(port: Int, pid: pid_t, script: String) {
+    /// The socket also drops when Codex quits; runningAppsChanged handles that case.
+    private func connectionDropped(port: Int, pid: pid_t) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
-            guard let self else { return }
-            guard self.runningCodex()?.processIdentifier == pid else { return NSApp.terminate(nil) }
-            self.attach(port: port, pid: pid, script: script)
+            guard let self, self.attachedPID == pid, self.codexApps().contains(where: { $0.processIdentifier == pid }) else { return }
+            self.connect(port: port, pid: pid)
         }
+    }
+
+    private func codexQuit() {
+        log("Codex quit; waiting for it to start again")
+        attachedPID = 0
+        devtools?.disconnect()
+        devtools = nil
     }
 
     private func confirmRestart() -> Bool {
@@ -283,7 +444,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return alert.runModal() == .alertFirstButtonReturn
     }
 
-    private func fail(_ message: String) {
+    private func alert(_ message: String) {
         log("error: \(message)")
         let alert = NSAlert()
         alert.alertStyle = .warning
@@ -291,12 +452,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.informativeText = message
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
-        NSApp.terminate(nil)
     }
 }
 
 let app = NSApplication.shared
-let delegate = AppDelegate()
-app.delegate = delegate
+let helper = Helper()
+app.delegate = helper
 app.setActivationPolicy(.accessory)
 app.run()

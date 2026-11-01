@@ -10,6 +10,9 @@ set -euo pipefail
 REPO="satellitedown/codex-themes"
 NAME="Codex Themes.app"
 CODEX_ID="com.openai.codex"
+# The login item the app writes for itself (see macos/CodexThemes.swift).
+AGENT="dev.codexthemes.agent"
+AGENT_PLIST="$HOME/Library/LaunchAgents/$AGENT.plist"
 
 usage() {
   cat <<EOF
@@ -19,7 +22,7 @@ Installs or updates Codex Themes from the latest GitHub release.
 
   --version vX.Y.Z  install that release instead of the latest
   --zip FILE        install a local build (scripts/build-app.sh makes dist/Codex-Themes.zip)
-  --no-open         don't open Codex Themes afterwards
+  --no-open         install without starting it (open Codex Themes later to turn it on)
   --uninstall       remove Codex Themes
   -h, --help        show this help
 EOF
@@ -70,12 +73,21 @@ codex_installed() {
   return 1
 }
 
-if ((uninstall)); then
+# Quits the background helper: unloads its login item for this session (the
+# plist stays, so it starts again at the next login) and quits any copy that
+# was opened by hand.
+stop_helper() {
+  launchctl bootout "gui/$(id -u)/$AGENT" 2>/dev/null || true
   pkill -x CodexThemes 2>/dev/null || true
+}
+
+if ((uninstall)); then
+  stop_helper
+  rm -f "$AGENT_PLIST" "$HOME/Library/Logs/CodexThemes.log"
   target="$(installed_app)"
   [[ -n "$target" ]] || { echo "Codex Themes isn't installed."; exit 0; }
-  rm -rf "$target" "$HOME/Library/Logs/CodexThemes.log"
-  echo "✓ removed $target"
+  rm -rf "$target"
+  echo "✓ removed $target and its login item"
   echo "  Codex keeps the wallpaper in open windows until you quit and reopen it."
   exit 0
 fi
@@ -110,7 +122,7 @@ if [[ -z "$target" ]]; then
   target="$dest/$NAME"
 fi
 
-pkill -x CodexThemes 2>/dev/null || true
+stop_helper
 rm -rf "$target"
 ditto "$app" "$target"
 # Not notarized: make sure no quarantine flag (from a browser download) blocks the first launch.
@@ -123,9 +135,11 @@ if ! codex_installed; then
   exit 0
 fi
 
-echo "  Open Codex through Codex Themes from now on: it starts Codex with wallpapers."
-echo "  Pick one at the bottom of the sidebar, type /theme in a chat, or press ⌘⌥T."
+echo "  Codex Themes runs in the background and starts at login, so Codex gets its"
+echo "  wallpaper however you open it. Pick one with /theme in a chat, or press ⌘⌥T."
 if ((open_app)); then
-  echo "  Opening it now. If Codex is already running, it asks to restart Codex once."
+  echo "  Starting it now. If Codex is already open, it asks to restart Codex once."
   open "$target"
+else
+  echo "  Open Codex Themes once to start it."
 fi

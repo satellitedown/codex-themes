@@ -4,7 +4,6 @@ import { activeComposer, clearComposer, composerOf, composerRect, slashQuery } f
 import { ReadingGlass } from './glass.js';
 import { MAIN, sidebarBounds } from './layout.js';
 import { OFF, Picker } from './picker.js';
-import { SidebarSwitcher } from './sidebar.js';
 import { Store } from './store.js';
 import { Surfaces } from './surfaces.js';
 import { Wallpaper } from './wallpaper.js';
@@ -39,14 +38,10 @@ export class CodexThemes {
       onPreview: (id) => this.show(id),
       onApply: (id) => this.select(id),
       onClose: (reason) => this.pickerClosed(reason),
-    });
-    this.sidebar = new SidebarSwitcher({
-      signal,
-      onSelect: (id) => this.select(id),
       onScheme: (scheme) => setAppearance(scheme).catch((error) => console.warn(error)),
     });
     canSetAppearance().then((available) => {
-      if (available && !signal.aborted) this.sidebar.enableSchemeSwitch();
+      if (available && !signal.aborted) this.picker.enableSchemeSwitch();
     });
     this.glass = new ReadingGlass({ signal, after: this.wallpaper.canvas });
 
@@ -58,6 +53,7 @@ export class CodexThemes {
       if (scheme !== this.scheme) {
         this.scheme = scheme;
         this.show(this.current);
+        this.picker.setScheme(scheme);
       }
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-reduced-motion'] });
@@ -80,7 +76,6 @@ export class CodexThemes {
 
     const poll = setInterval(() => {
       this.trackLayout();
-      this.sidebar.mount();
       if (this.picker.isOpen && this.pickerMode === 'slash' && slashQuery(this.pickerEditor) === null) this.picker.close('typing');
     }, POLL_MS);
     signal.addEventListener('abort', () => clearInterval(poll), { once: true });
@@ -94,7 +89,6 @@ export class CodexThemes {
   show(id) {
     const theme = THEME_BY_ID.get(id);
     this.current = theme ? id : OFF;
-    this.sidebar.update({ current: this.current, scheme: this.scheme });
     if (!theme) {
       this.wallpaper.hide();
       this.surfaces.clear();

@@ -227,7 +227,7 @@ export default {
         dot: { bg: '#5a62d0', fg: '#5a62d0', halo: '#5a62d0' },
         mote: { bg: '#7f88f0', fg: '#7f88f0', halo: '#7f88f0' },
       },
-      ui: { base: '#0e0f20', sidebar: 'rgba(14, 15, 34, 0.66)', composer: 'rgba(22, 24, 52, 0.86)', accent: '#8f97ff', bubble: 'rgba(110, 118, 240, 0.24)' },
+      ui: { base: '#0e0f20', composer: 'rgba(22, 24, 52, 0.86)', accent: '#8f97ff', bubble: 'rgba(110, 118, 240, 0.24)' },
       lane: 0.62,
     },
     light: {
@@ -252,7 +252,7 @@ export default {
         dot: { bg: '#a3a8e6', fg: '#a3a8e6', halo: '#a3a8e6' },
         mote: { bg: '#8a90e0', fg: '#8a90e0', halo: '#8a90e0' },
       },
-      ui: { base: '#f0effb', sidebar: 'rgba(242, 241, 252, 0.7)', composer: 'rgba(255, 255, 255, 0.86)', accent: '#4b55d0', bubble: 'rgba(75, 85, 208, 0.12)' },
+      ui: { base: '#f0effb', composer: 'rgba(255, 255, 255, 0.86)', accent: '#4b55d0', bubble: 'rgba(75, 85, 208, 0.12)' },
       lane: 0.55,
     },
   },

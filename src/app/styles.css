@@ -175,12 +175,51 @@
   color: var(--color-text-secondary);
 }
 
-.cx-variant {
-  font-size: 11.5px;
-  padding: 0 6px;
+/* Day / Night: Codex's light or dark appearance. */
+.cx-mode {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--color-background-secondary-soft-alpha, rgba(127, 127, 127, 0.12));
+}
+
+.cx-mode button {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 22px;
+  margin: 0;
+  padding: 0 9px;
+  border: 0;
   border-radius: 6px;
-  border: 1px solid var(--color-border);
+  background: transparent;
   color: var(--color-text-tertiary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cx-mode svg {
+  width: 13px;
+  height: 13px;
+}
+
+.cx-mode button:not(:disabled):hover {
+  color: var(--color-text);
+}
+
+.cx-mode button[aria-pressed='true'] {
+  background: var(--color-surface-elevated, rgba(127, 127, 127, 0.2));
+  color: var(--color-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.cx-mode button:disabled {
+  cursor: default;
 }
 
 .cx-hints {
@@ -302,140 +341,4 @@
 /* Codex's own slash menu ("No commands") would sit under the panel. */
 :root.cx-picker-open [data-composer-overlay-floating-ui] {
   visibility: hidden !important;
-}
-
-/* ── Sidebar wallpaper switcher ──────────────────────────────────── */
-
-.cx-side {
-  flex: none;
-  margin: 6px 8px 10px;
-  padding: 8px 8px 9px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--cx-sidebar, var(--color-surface-secondary)) 45%, transparent);
-  box-shadow: inset 0 0 0 1px var(--color-border);
-}
-
-.cx-side-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 2px 7px;
-  font-size: 12px;
-  line-height: 18px;
-}
-
-.cx-side-title {
-  color: var(--color-text-secondary);
-}
-
-.cx-side-current {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--color-text-tertiary);
-}
-
-.cx-side-off {
-  appearance: none;
-  margin-left: auto;
-  padding: 0 6px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--color-text-tertiary);
-  font: inherit;
-  cursor: pointer;
-}
-
-.cx-side-off:hover {
-  background: var(--color-background-primary-ghost-hover);
-  color: var(--color-text);
-}
-
-.cx-side-off[aria-pressed='true'] {
-  background: var(--color-background-secondary-soft-alpha);
-  color: var(--color-text);
-}
-
-.cx-side-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.cx-side-thumb {
-  appearance: none;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 7px;
-  overflow: hidden;
-  aspect-ratio: 16 / 10;
-  background: var(--color-surface-secondary, #141414);
-  box-shadow: 0 0 0 1px var(--color-border);
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.cx-side-thumb canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.cx-side-thumb:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 0 1px var(--color-border-strong, rgba(255, 255, 255, 0.2));
-}
-
-.cx-side-thumb[aria-pressed='true'] {
-  box-shadow: 0 0 0 2px var(--cx-accent, var(--color-background-accent-action, #3a83f7));
-}
-
-.cx-side-mode {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-  margin-top: 8px;
-  padding: 2px;
-  border-radius: 8px;
-  background: var(--color-background-secondary-soft-alpha, rgba(127, 127, 127, 0.12));
-}
-
-.cx-side-mode[hidden] {
-  display: none;
-}
-
-.cx-side-mode button {
-  appearance: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  height: 22px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--color-text-tertiary);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.cx-side-mode svg {
-  width: 13px;
-  height: 13px;
-}
-
-.cx-side-mode button:hover {
-  color: var(--color-text);
-}
-
-.cx-side-mode button[aria-pressed='true'] {
-  background: var(--color-surface-elevated-secondary, rgba(127, 127, 127, 0.2));
-  color: var(--color-text);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }

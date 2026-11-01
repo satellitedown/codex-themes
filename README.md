@@ -1,9 +1,8 @@
 # Codex Themes
 
-Animated ASCII wallpapers for Codex on macOS, with a theme switcher in the
-sidebar and a `/theme` picker in the composer. Each wallpaper is a live scene
-painted in glyph tiles, with a day and a night version that follow Codex's
-light and dark appearance.
+Animated ASCII wallpapers for Codex on macOS, picked with `/theme` in the
+composer. Each wallpaper is a live scene painted in glyph tiles, with a day and
+a night version that follow Codex's light and dark appearance.
 
 ![All eight themes, day and night](docs/themes.jpg)
 
@@ -23,12 +22,14 @@ curl -fsSL https://raw.githubusercontent.com/satellitedown/codex-themes/master/i
 ```
 
 It downloads the latest [release](https://github.com/satellitedown/codex-themes/releases/latest),
-installs **Codex Themes** into Applications and opens it. If Codex is already
-running, Codex Themes asks to restart it once. ([Read the script](install.sh)
+installs **Codex Themes** into Applications and starts it. If Codex is already
+open, Codex Themes asks to restart it once. ([Read the script](install.sh)
 before running it if you like.)
 
-From then on, open **Codex Themes** instead of Codex; put it in the Dock in
-Codex's place. It starts Codex with wallpapers and quits when Codex quits.
+Codex Themes then runs in the background (no Dock icon) and starts at login,
+so Codex gets its wallpaper however you open it: Dock, Spotlight, or after an
+update. macOS notes that it added a background item; it is listed as
+**Codex Themes** in System Settings → General → Login Items.
 
 **Update:** run the same command again.
 
@@ -44,11 +45,11 @@ Open Codex windows keep their wallpaper until you quit and reopen Codex.
 
 **Manual download.** Download `Codex-Themes.zip` from the
 [latest release](https://github.com/satellitedown/codex-themes/releases/latest),
-unzip it and move **Codex Themes** into Applications. The app isn't notarized
-by Apple, so macOS blocks the first launch of a browser download: open
-**System Settings → Privacy & Security** and click **Open Anyway**. (The
-Terminal installer doesn't hit this, because files fetched with `curl` aren't
-quarantined.)
+unzip it, move **Codex Themes** into Applications and open it once. The app
+isn't notarized by Apple, so macOS blocks the first launch of a browser
+download: open **System Settings → Privacy & Security** and click
+**Open Anyway**. (The Terminal installer doesn't hit this, because files
+fetched with `curl` aren't quarantined.)
 
 **From source.** Requires Node.js 22+ and the Xcode Command Line Tools
 (`xcode-select --install`):
@@ -65,13 +66,13 @@ Release builds are made the same way by
 
 ## Use
 
-- Pick a wallpaper from the **Wallpaper** previews at the bottom of the sidebar
-  (hover to play one); **Off** turns it off. **Day / Night** below the previews
-  switches Codex between its light and dark appearance (the same setting as
-  Settings → Appearance), and each wallpaper follows with its day or night scene.
-- Type `/theme` in any composer, or press **⌘⌥T**.
+- Type `/theme` (or `/themes`) in any composer, or press **⌘⌥T**, to open the
+  wallpaper picker.
 - **← →** preview a theme in the real wallpaper, **↵** applies it and **esc** reverts.
-- Clicking a card applies it right away.
+- Clicking a card applies it right away; **Off** turns the wallpaper off.
+- **Day / Night** at the top of the picker switches Codex between its light and
+  dark appearance (the same setting as Settings → Appearance), and each
+  wallpaper follows with its day or night scene.
 - `/theme lantern`, `/theme 4` or `/theme off` select a theme directly; **↵** applies it.
 
 The choice is saved in Codex's own storage and syncs across Codex windows.
@@ -96,8 +97,13 @@ wallpaper changes over to night at sunset.
 The ChatGPT app is a Chromium/Electron app whose bundle is code-signed and
 integrity checked, so nothing inside `ChatGPT.app` is modified. Instead:
 
-1. `macos/CodexThemes.swift` (the launcher) opens Codex with
-   `--remote-debugging-port=<random free port>`.
+1. `macos/CodexThemes.swift` (the helper) runs in the background and writes a
+   LaunchAgent (`~/Library/LaunchAgents/dev.codexthemes.agent.plist`) so it
+   starts at login. Codex only accepts a DevTools connection when it starts
+   with `--remote-debugging-port`, so the helper opens Codex with a random
+   localhost port, and when Codex starts without one (Dock, Spotlight, login,
+   its own relaunch after an update) it quits that fresh instance and reopens
+   it with one.
 2. It connects over the Chrome DevTools Protocol, attaches to each Codex window,
    and registers `dist/codex-themes.js` to run on every page load. Utility
    windows (quick ask, pet overlay) are skipped.
@@ -105,8 +111,7 @@ integrity checked, so nothing inside `ChatGPT.app` is modified. Instead:
    makes the window shell transparent, puts frosted strips behind the sidebar
    and the conversation (the sidebar has no panel of its own, so it sits on
    the scene like the chat does), turns the composer and settings panels into
-   tinted glass, retints menus and popovers to the theme, and adds the picker
-   and the sidebar switcher.
+   tinted glass, retints menus and popovers to the theme, and adds the picker.
 
 Per frame, a scene writes cells into a `Field` (tile, bare glyph or solid
 block, with ink and opacity). The renderer blits them from a pre-rendered glyph
@@ -153,15 +158,18 @@ and publishes `Codex-Themes.zip`; `install.sh` installs the latest release.
 
 ## Caveats
 
-- Themes appear only when Codex was opened through Codex Themes. If Codex
-  relaunches itself (for example after an update), open Codex Themes again.
+- Codex takes a moment longer to open: when it starts without the DevTools
+  port, Codex Themes quits it and reopens it with one. A link that opens Codex
+  while it is closed is lost in that restart.
+- Codex Themes keeps running after Codex quits. Turning it off in Login Items
+  stops it starting at login; the uninstall command removes it entirely.
 - While Codex runs with themes, its DevTools port accepts connections from
   local processes. It is bound to 127.0.0.1 and closes when Codex quits.
 - Styling hooks rely on Codex's current markup (composer and surface CSS
   variables, sidebar and layout class names). A Codex update can break the
   glass styling until it is adjusted here.
 - Day / Night writes Codex's appearance setting through Codex's internal
-  settings service. If an update moves that service, the switch hides itself;
+  settings service. If an update moves that service, Day / Night is disabled;
   Settings → Appearance keeps working.
 - The app is ad-hoc signed, not notarized (see Manual download above).
 - Log: `~/Library/Logs/CodexThemes.log`.

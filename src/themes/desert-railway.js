@@ -120,7 +120,7 @@ export default {
         smoke: solid('#ffffff'),
         beam: solid('#fff1b0'),
       },
-      ui: { base: '#f3e3cb', sidebar: 'rgba(249, 242, 232, 0.68)', composer: 'rgba(255, 253, 249, 0.88)', accent: '#c9673f', bubble: 'rgba(201, 103, 63, 0.13)' },
+      ui: { base: '#f3e3cb', composer: 'rgba(255, 253, 249, 0.88)', accent: '#c9673f', bubble: 'rgba(201, 103, 63, 0.13)' },
       lane: 0.55,
     },
     dark: {
@@ -189,7 +189,7 @@ export default {
         smoke: solid('#6a72a0'),
         beam: solid('#fff1b0'),
       },
-      ui: { base: '#0a1030', sidebar: 'rgba(6, 9, 30, 0.62)', composer: 'rgba(10, 14, 40, 0.86)', accent: '#ffcf6b', bubble: 'rgba(255, 207, 107, 0.16)' },
+      ui: { base: '#0a1030', composer: 'rgba(10, 14, 40, 0.86)', accent: '#ffcf6b', bubble: 'rgba(255, 207, 107, 0.16)' },
       lane: 0.62,
     },
   },
